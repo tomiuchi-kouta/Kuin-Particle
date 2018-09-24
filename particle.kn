@@ -1,0 +1,104 @@
+; KuinNovelSystem particle (C)isimiya
+; E-Mail : isimiya.apps@gmail.com
+; Twitter : @isimiya9
+
+; ==================================
+; 変数
+; ==================================
++var particle: [][][]int {グループ及び生存時間,パーティクル番号,座標xy及び加算xy及び色及び生存時間及び直前のsysTime}
++var usedState: []bool
++var colors: []int
++var adder: [][]int
++var addRnder: []int
++var radius: []float
++var curNum: int
++var used: bool
++var sysTimeOld: int
++var sysTimeNow: int
++var delta: int
+
+; ==================================
+; 公開メソッド（初期化系）
+; ==================================
++func init()
+	do @particle :: #[3, 6, 6]int
+	do @usedState :: #[3]bool
+	do @colors :: [0xFFFFC1C1, 0xFFFFC1E0, 0xFFFFC1FF, 0xFFE0C1FF, 0xFFC1C1FF, 0xFFC1E0FF, 0xFFC1FFFF, 0xFFC1FFE0, 0xFFC1FFC1, 0xFFE0FFC1, 0xFFFFFFC1, 0xFFFFE0C1]
+	do @adder :: [[0, 100], [87, 50], [87, -50], [0, -100], [-87, -50], [-87, 50]]
+	do @addRnder :: [-29, 29]
+	do @radius :: [15.0, 15.0]
+end func
+
+; ==================================
+; 公開メソッド(生成系)
+; ==================================
++func generate(x: int, y: int)
+	do @used :: true
+	for UseCheckGroupLoop(0, 2)
+		do @curNum :: UseCheckGroupLoop
+		if(@usedState[UseCheckGroupLoop] = false)
+			do @used :: false
+			break UseCheckGroupLoop
+		end if
+	end for
+	
+	if(@used)
+		ret
+	end if
+	
+	do @sysTimeNow :: lib@sysTime()
+	
+	for ParticleLoop(0, 5)
+		; xy座標
+		do @particle[@curNum][ParticleLoop][0] :: x
+		do @particle[@curNum][ParticleLoop][1] :: y
+		; 加算xy
+		do @particle[@curNum][ParticleLoop][2] :: @adder[ParticleLoop][0] + lib@rnd(@addRnder[0], @addRnder[1])
+		do @particle[@curNum][ParticleLoop][3] :: @adder[ParticleLoop][1] + lib@rnd(@addRnder[0], @addRnder[1])
+		; 色
+		do @particle[@curNum][ParticleLoop][4] :: @colors[lib@rnd(0, 11)]
+		; 生存時間
+		do @particle[@curNum][ParticleLoop][5] :: lib@rnd(300, 700)
+	end for
+	
+	do @usedState[@curNum] :: true
+end func
+
+; ==================================
+; 公開メソッド(更新系)
+; ==================================
++func update()
+	do @sysTimeOld :: @sysTimeNow
+	do @sysTimeNow :: lib@sysTime()
+	do @delta :: @sysTimeNow - @sysTimeOld
+	
+	for GroupLoop(0, 2)
+		do @used :: false
+		if(@usedState[GroupLoop])
+			for ParticleLoop(0, 5)
+				if(@particle[GroupLoop][ParticleLoop][5] > 0)
+					do @used :: true
+					do @particle[GroupLoop][ParticleLoop][0] :+ @particle[@curNum][ParticleLoop][2] * @delta / 500
+					do @particle[GroupLoop][ParticleLoop][1] :+ @particle[@curNum][ParticleLoop][3] * @delta / 500
+					do @particle[GroupLoop][ParticleLoop][5] :- @delta
+				end if
+			end for
+			do @usedState[GroupLoop] :: @used
+		end if
+	end for
+end func
+
+; ==================================
+; 公開メソッド(出力系)
+; ==================================
++func draw()
+	for GroupLoop(0, 2)
+		if(@usedState[GroupLoop])
+			for ParticleLoop(0, 5)
+				if(@particle[GroupLoop][ParticleLoop][5] > 0)
+					do draw@circle(@particle[GroupLoop][ParticleLoop][0] $ float, @particle[GroupLoop][ParticleLoop][1] $ float, @radius[0], @radius[1], @particle[GroupLoop][ParticleLoop][4])
+				end if
+			end for
+		end if
+	end for
+end func
